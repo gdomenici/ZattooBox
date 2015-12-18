@@ -26,8 +26,12 @@ msgctxt "#30002"
 msgid "Password"
 msgstr ""
 
-msgctxt "#30003"
-msgid "Show 'now playing' program next to channel name"
+msgctxt "#30021"
+msgid "Path to m3u file used by IPTV Simple Client"
+msgstr ""
+
+msgctxt "#30022"
+msgid "How often (minutes) should we read Zattoo 'Favorites'"
 msgstr ""
 
 msgctxt "#30100"

@@ -56,7 +56,7 @@ class LiveTV(ZBExtension):
 		for record in channels:
 			items.append(ZBPlayableItem(
 				host=self,
-				args={'mode': 'watch', 'id': record['id']},
+				args={'mode': 'watch', 'id': record['id'], 'cid': record['cid']},
 				title=record['title'],
 				image=record['image_url'],
 				title2=''
@@ -133,6 +133,7 @@ class LiveTV(ZBExtension):
 						channelLabel += ' (next: ' + channel['next']['t'] + ')'
 				allChannels.append({
 					'id': channel['id'],
+					'cid': channel['cid'],
 					'title': channelLabel,
 					'image_url': self.fetch_imageUrl(channel['qualities'][0]['logo_black_84']),
 					'recommend': 1 if channel['recommendations'] == True else 0,

@@ -3,6 +3,7 @@
     <category label="30000">
         <setting label="30001" type="text" id="username" default=""/>
         <setting label="30002" type="text" id="password" option="hidden" enable="!eq(-1,)" default=""/>
-        <setting label="30003" type="bool" id="showNowPlayingProgram" default="false"/>
+        <setting label="30021" type="file" id="m3uPath" default="zattoo.m3u"/>
+        <setting label="30022" type="number" id="m3uGenerateFrequency" default="60"/>
     </category>
 </settings>
