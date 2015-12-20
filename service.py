@@ -29,7 +29,6 @@ if __name__ == '__main__':
 	monitor = xbmc.Monitor()
 
 	# Do the initial one on startup
-	'''
 	downloadChannelList()
 	
 	while not monitor.abortRequested():
@@ -41,4 +40,3 @@ if __name__ == '__main__':
 			# Abort was requested while waiting. We should exit
 			break
 		downloadChannelList()
-	'''
