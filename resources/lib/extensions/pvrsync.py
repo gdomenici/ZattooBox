@@ -10,15 +10,14 @@ from livetv import LiveTV
 import os
 
 class PvrSync(LiveTV):
-	M3UPath = None
 	
-	def __init__(self, zapiSession, zbProxy, m3uPath):
+	def __init__(self, zapiSession, zbProxy):
 		super(PvrSync, self).__init__(zapiSession, zbProxy)
-		self.M3UPath = m3uPath
 
 	def create_pvr_playlist(self):
 		args = {'mode': 'root', 'cat': 'fav'}
 		self.build_channelsList(args)
+		'''
 		with open(self.M3UPath, 'w') as f:
 			f.write ('#EXTM3U\n')
 			for oneItem in self.ZBProxy.DirectoryItems:
@@ -33,3 +32,4 @@ class PvrSync(LiveTV):
 				if resultData is not None:
 					url = resultData['stream']['watch_urls'][0]['url']
 					f.write(url + '\n')
+		'''

@@ -9,7 +9,7 @@ from resources.lib.extensions.pvrsync import PvrSync
  
 def downloadChannelList():
 	if zapiSession.init_session(kodi_addon.getSetting('username'), kodi_addon.getSetting('password'), False):
-		pvrSync = PvrSync(zapiSession, zbPlaylistProxy, kodi_addon.getSetting('m3uPath'))
+		pvrSync = PvrSync(zapiSession, zbPlaylistProxy)
 		pvrSync.create_pvr_playlist()
 	else:
 		xbmcgui.Dialog().ok(kodi_addon.getAddonInfo('name'), kodi_addon.getLocalizedString(30902))
@@ -22,12 +22,14 @@ if __name__ == '__main__':
 
 	zbPlaylistProxy = ZBPlaylistProxy(
 		kodi_addon,
-		sys.argv[0])
+		sys.argv[0],
+		kodi_addon.getSetting('m3uPath'))
 	zapiSession = ZapiSession(zbPlaylistProxy.StoragePath)
 	
 	monitor = xbmc.Monitor()
 
 	# Do the initial one on startup
+	'''
 	downloadChannelList()
 	
 	while not monitor.abortRequested():
@@ -39,3 +41,4 @@ if __name__ == '__main__':
 			# Abort was requested while waiting. We should exit
 			break
 		downloadChannelList()
+	'''

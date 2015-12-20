@@ -8,6 +8,7 @@
 
 import xbmc, xbmcplugin, xbmcgui
 from zbaddonproxy import ZBAddonProxy
+import json
 
 # This is used for synchronization with the PVR plugin
 # Note that we inherit from ZBAddonProxy
@@ -17,20 +18,22 @@ class ZBPlaylistProxy(ZBAddonProxy):
 	SourcePath = None
 	StoragePath = None
 	DirectoryItems = None
+	M3UPath = None
+	ZattooBoxBaseUrl = 'plugin://plugin.video.zattoobox/'
 
-	def __init__(self, addon, urlBase):
+	def __init__(self, addon, urlBase, m3uPath):
 		self.Addon = addon
 		self.URLBase = urlBase
 		self.SourcePath = xbmc.translatePath(addon.getAddonInfo('path')).decode('utf-8')		
 		self.StoragePath = xbmc.translatePath(addon.getAddonInfo('profile')).decode('utf-8')
 		self.DirectoryItems = None
+		self.M3UPath = m3uPath
 
 	def get_string(self, code):
 		return self.Addon.getLocalizedString(code)
 
 	# Writes the playlist to the specified m3u file
 	def add_directoryItems(self, items):
-		'''
 		with open(self.M3UPath, 'w') as f:
 			f.write ('#EXTM3U\n')
 			for item in items:
@@ -39,6 +42,5 @@ class ZBPlaylistProxy(ZBAddonProxy):
 				listEntry = '#EXTINF:-1 tvg-id="{0}" tvg-logo="{1}" group-title=German-TV-Channels",[COLOR deepskyblue]\n'.format(
 					item.Args['cid'], item.Image)
 				f.write(listEntry)
-				f.write(item.get_url() + '\n')
-		'''
-		self.DirectoryItems = items
+				f.write('{0}?{1}\n'.format(self.ZattooBoxBaseUrl, item.get_url()))
+		#self.DirectoryItems = items
