@@ -79,6 +79,17 @@ class ZapiSession:
 			pass
 		return None
 
+	def request_url_noExceptionCatch(self, url, params):
+		response = self.HttpHandler.open(url, urllib.urlencode(params) if params is not None else None)
+		if response is not None:
+			sessionId = self.extract_sessionId(response.info().getheader('Set-Cookie'))
+			if sessionId is not None:
+				self.set_cookie(sessionId)
+				if self.CACHE_ENABLED:
+					self.persist_sessionId(sessionId)
+			return response.read()
+		return None
+		
 	def exec_zapiCall(self, api, params, context='default'):
 		url = self.ZAPI_AUTH_URL + api if context == 'session' else self.ZAPI_URL + api
 		content = self.request_url(url, params)

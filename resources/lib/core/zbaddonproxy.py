@@ -30,6 +30,8 @@ class ZBAddonProxy(object):
 		xbmcplugin.setContent(self.Handle, 'movies')
 		for item in items:
 			li = item.get_listItem()
+			xbmc.log ('URL is:')
+			xbmc.log ('%s?%s' % (self.URLBase, item.get_url()))
 			xbmcplugin.addDirectoryItem(
 				handle=self.Handle,
 				url='%s?%s' % (self.URLBase, item.get_url()),
@@ -43,7 +45,4 @@ class ZBAddonProxy(object):
 		li.setInfo(type="Video", infoLabels={})
 		li.setPath(url)
 		xbmcplugin.setResolvedUrl(self.Handle, True, li)		
-
-
-
 

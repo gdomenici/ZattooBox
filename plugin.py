@@ -9,6 +9,7 @@
 
 import sys, urlparse
 import xbmcgui, xbmcaddon
+import xbmc
 
 #import ZBcore
 from resources.lib.core.zapisession import ZapiSession
