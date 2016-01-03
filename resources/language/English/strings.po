@@ -42,6 +42,10 @@ msgctxt "#30102"
 msgid "Recordings"
 msgstr ""
 
+msgctxt "#30103"
+msgid "Download"
+msgstr ""
+
 msgctxt "#30901"
 msgid "Content not accessible"
 msgstr ""

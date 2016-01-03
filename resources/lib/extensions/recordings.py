@@ -8,7 +8,7 @@
 
 from resources.lib.core.zbextension import ZBExtension
 from resources.lib.core.zbfolderitem import ZBFolderItem
-from resources.lib.core.zbplayableitem import ZBPlayableItem
+from resources.lib.core.zbdownloadableitem import ZBDownloadableItem
 import os
 import thread
 import urlparse
@@ -37,6 +37,8 @@ class Recordings(ZBExtension):
 			self.build_recordingsList()
 		elif args['mode'] == 'watch':
 			self.watch(args)
+		elif args['mode'] == 'download':
+			self.download(args)
 
 	#---
 
@@ -47,12 +49,13 @@ class Recordings(ZBExtension):
 
 		recordings = []
 		for record in resultData['recordings']:
-			recordings.append(ZBPlayableItem(
+			recordings.append(ZBDownloadableItem(
 				host=self,
 				args={'mode': 'watch', 'id': record['id']},
 				title=record['title'],
 				image=record['image_url'],
-				title2=record['episode_title']
+				title2=record['episode_title'],
+				contextMenuArgs={'mode': 'download', 'id': record['id']}
 				)
 			)
 		self.ZBProxy.add_directoryItems(recordings)
@@ -65,6 +68,13 @@ class Recordings(ZBExtension):
 			#thread.start_new_thread(downloadMasterPlaylist, ( self, url ) )
 			self.ZBProxy.play_stream(url)
 
+	def download(self, args):
+		params = {'recording_id': args['id'], 'stream_type': 'hls'}
+		resultData = self.ZapiSession.exec_zapiCall('/zapi/watch', params)
+		if resultData is not None:
+			url = resultData['stream']['url']
+			#thread.start_new_thread(downloadMasterPlaylist, ( self, url ) )
+			downloadMasterPlaylist( self, url )
 			
 '''
 	Async functions, outside the class
@@ -129,6 +139,7 @@ def downloadVariantPlaylist(itself, url, bitrate):
 			line = playlistInputStream.readline()
 	xbmc.log('There are this many segments to download:')
 	xbmc.log(str(len(segments)))
+	'''
 	# Next: download all segments
 	for oneSegment in segments:
 		# oneSegment is a dictionary looking like this: { 'segmentUrl': segmentUrl, 'segmentFullPath': segmentFullPath }
@@ -137,3 +148,4 @@ def downloadVariantPlaylist(itself, url, bitrate):
 		with open(oneSegment['segmentFullPath'], 'wb') as segmentOutputStream:
 			segmentOutputStream.write(segmentData)
 		#time.sleep(.1)
+	'''
