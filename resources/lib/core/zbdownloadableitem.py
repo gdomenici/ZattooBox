@@ -23,7 +23,7 @@ class ZBDownloadableItem(ZBPlayableItem):
 		li = super(ZBDownloadableItem, self).get_listItem()
 		# Now add context menu entries
 		downloadMenuText = self.Host.ZBProxy.get_string(30103) # "Download"
-		downloadMenuUrl = self.get_context_menu_url()
+		downloadMenuUrl = '%s?%s' % (self.Host.ZBProxy.URLBase, self.get_context_menu_url())
 		xbmc.log ('downloadMenuUrl is:')
 		xbmc.log (downloadMenuUrl)
 		li.addContextMenuItems(
@@ -32,4 +32,3 @@ class ZBDownloadableItem(ZBPlayableItem):
 		
 	def get_context_menu_url(self):
 		return 'ext=%s&%s' % (type(self.Host).__name__, urllib.urlencode(self.ContextMenuArgs))
-	
