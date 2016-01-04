@@ -9,6 +9,7 @@
 from resources.lib.core.zbextension import ZBExtension
 from resources.lib.core.zbfolderitem import ZBFolderItem
 from resources.lib.core.zbdownloadableitem import ZBDownloadableItem
+from recordingdownloadprogress import RecordingDownloadProgress
 import os
 import thread
 import urlparse
@@ -73,17 +74,24 @@ class Recordings(ZBExtension):
 		resultData = self.ZapiSession.exec_zapiCall('/zapi/watch', params)
 		if resultData is not None:
 			url = resultData['stream']['url']
-			thread.start_new_thread(self.downloadPlaylist, ( url, args['title'] ))
+			title = args['title']
+			highestVariantStream = self.downloadPlaylist(url, title)
+			# Start downloading highest variant. The highestVariantStream dict looks like this:
+			# { 'variantUrl': variantUrl, 'extXStream': line, 'bitrate': bitrate }
+			segments = self.downloadVariantPlaylist(highestVariantStream['variantUrl'], highestVariantStream['bitrate'])
+			# Starts downloading the actual streams, asynchronously.
+			# segments is an array of dict that looks like this:
+			# { 'segmentUrl': segmentUrl, 'segmentFullPath': segmentFullPath }
+			thread.start_new_thread(self.downloadSegments, ( title, segments ) )
 			
-	'''
-		Async functions
-	'''
+	# Returns a dict corresponding to the highest variant bitrate. The dict looks like this:
+	# { 'variantUrl': variantUrl, 'extXStream': line, 'bitrate': bitrate }
 	def downloadPlaylist(self, url, title):
 		playlist = self.ZapiSession.request_url(url, None)
 		playlistStream = StringIO.StringIO(playlist)
 		line = playlistStream.readline()
 		highestBitrate = 0
-		streams = {}
+		variantStreams = {}
 		while line != '':
 			if line.startswith('#EXT-X-STREAM-INF:'):
 				lineParts = line.split(':')[1].split(',')
@@ -97,24 +105,25 @@ class Recordings(ZBExtension):
 					raise Exception('Cannot find BANDWIDTH attribute in master playlist')
 				variantUrl = playlistStream.readline()
 				if variantUrl == '': # shouldn't happen but you never know
-					break
+					raise Exception('Malformed playlist: missing variant URL after EXT-X-STREAM-INF tag')
 				variantUrl = urlparse.urljoin(url, variantUrl)
-				streams[bitrate] = { 'variantUrl': variantUrl, 'extXStream': line }
+				variantStreams[bitrate] = { 'variantUrl': variantUrl, 'extXStream': line, 'bitrate': bitrate }
 				if bitrate > highestBitrate:
 					highestBitrate = bitrate
 			line = playlistStream.readline()
 		# Now operate only on the highest bitrate stream
-		# Create a new master playlist
+		# Create a new master playlist, outputting only the highest variant
 		masterPlaylistFilename = self.get_valid_filename(title) + '.m3u8'
 		masterPlaylistFilename = os.path.join(self.ZBProxy.StoragePath, masterPlaylistFilename)
 		with open(masterPlaylistFilename, 'w') as playlistOutputStream:
 			playlistOutputStream.write('#EXTM3U\n')
-			playlistOutputStream.write(streams[highestBitrate]['extXStream']) # this one already has \n at the end
+			playlistOutputStream.write(variantStreams[highestBitrate]['extXStream']) # this one already has \n at the end
 			rewrittenVariantUrl = `highestBitrate` + '.m3u8'
 			playlistOutputStream.write(rewrittenVariantUrl + '\n')
-		# Start downloading highest variant and its segments
-		self.downloadVariantPlaylist(streams[highestBitrate]['variantUrl'], highestBitrate)
+		return variantStreams[highestBitrate]
 		
+	# Returns an array of a dict that looks like this:
+	# { 'segmentUrl': segmentUrl, 'segmentFullPath': segmentFullPath }
 	def downloadVariantPlaylist(self, url, bitrate):
 		playlist = self.ZapiSession.request_url(url, None)
 		playlistInputStream = StringIO.StringIO(playlist)
@@ -139,18 +148,27 @@ class Recordings(ZBExtension):
 					segmentFullPath = os.path.join(self.ZBProxy.StoragePath, segmentFilename)
 					segments.append( { 'segmentUrl': segmentUrl, 'segmentFullPath': segmentFullPath } )
 				line = playlistInputStream.readline()
+		return segments
+
+	def downloadSegments (self, title, segments):
 		xbmc.log('There are this many segments to download:')
 		xbmc.log(str(len(segments)))
-		'''
 		# Next: download all segments
+		downloadProgress = RecordingDownloadProgress(title, segments.len)
+		segmentCounter = 0
 		for oneSegment in segments:
-			# oneSegment is a dictionary looking like this: { 'segmentUrl': segmentUrl, 'segmentFullPath': segmentFullPath }
-			segmentData = self.ZapiSession.request_url_noExceptionCatch(oneSegment['segmentUrl'], None)
-			# Note the 'wb' coz it's binary
-			with open(oneSegment['segmentFullPath'], 'wb') as segmentOutputStream:
-				segmentOutputStream.write(segmentData)
-			#time.sleep(.1)
-		'''
+			try:
+				# oneSegment is a dictionary looking like this: { 'segmentUrl': segmentUrl, 'segmentFullPath': segmentFullPath }
+				segmentData = self.ZapiSession.request_url_noExceptionCatch(oneSegment['segmentUrl'], None)
+				# Note the 'wb' coz it's binary
+				with open(oneSegment['segmentFullPath'], 'wb') as segmentOutputStream:
+					segmentOutputStream.write(segmentData)
+				segmentCounter += 1
+				downloadProgress.DownloadedSegments = segmentCounter
+			except Exception as ex:
+				downloadProgress.LastStatus = 'error'
+				downloadProgress.Error = `ex`
+				return
 			
 	def get_valid_filename(self, title):
 		 validFilenameChars = "-_.() %s%s" % (string.ascii_letters, string.digits)
