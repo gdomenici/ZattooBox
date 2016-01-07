@@ -113,8 +113,11 @@ class Recordings(ZBExtension):
 			line = playlistStream.readline()
 		# Now operate only on the highest bitrate stream
 		# Create a new master playlist, outputting only the highest variant
-		masterPlaylistFilename = self.get_valid_filename(title) + '.m3u8'
-		masterPlaylistFilename = os.path.join(self.ZBProxy.StoragePath, masterPlaylistFilename)
+		masterPlaylistPath = self.get_valid_filename(title)
+		masterPlaylistPath = os.path.join(self.ZBProxy.StoragePath, masterPlaylistPath)
+		if not os.path.exists(masterPlaylistPath):
+			os.makedirs(masterPlaylistPath)
+		masterPlaylistFilename = os.path.join(masterPlaylistPath, 'index.m3u8')
 		with open(masterPlaylistFilename, 'w') as playlistOutputStream:
 			playlistOutputStream.write('#EXTM3U\n')
 			playlistOutputStream.write(variantStreams[highestBitrate]['extXStream']) # this one already has \n at the end

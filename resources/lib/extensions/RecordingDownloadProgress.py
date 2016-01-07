@@ -6,6 +6,7 @@
 # (c) 2014-2016 Pascal Nançoz; Guido Domenici
 ##################################
 
+import json
 
 class RecordingDownloadProgress:
 	Title = None
@@ -19,7 +20,14 @@ class RecordingDownloadProgress:
 		self.DownloadedSegments = 0
 		self.TotalSegments = totalSegments
 		self.lastStatus = 'OK'
-	
-	def getProgressPercentage():
+
+	def __init__ (self, fromFilename):
+		with open(fromFilename, 'r') as f:
+			self.__dict__ = json.loads(f.read())	
+		
+	def getProgressPercentage(self):
 		return (self.DownloadedSegments / self.TotalSegments) * 100
 
+	def serialize(self, toFilePath):
+		with open(toFilePath, 'w') as f:
+			f.write(json.dumps(self.__dict__))
