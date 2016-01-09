@@ -46,3 +46,5 @@ class ZBAddonProxy(object):
 		li.setPath(url)
 		xbmcplugin.setResolvedUrl(self.Handle, True, li)		
 
+	def show_message(self, message):
+		xbmcgui.Dialog().ok(self.Addon.getAddonInfo('name'), message)

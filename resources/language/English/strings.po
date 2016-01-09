@@ -53,3 +53,11 @@ msgstr ""
 msgctxt "#30902"
 msgid "Unable to start a session. Check your account settings!"
 msgstr ""
+
+msgctxt "#30903"
+msgid "Recording download started. Check your Downloads folder for progress."
+msgstr ""
+
+msgctxt "#30904"
+msgid "An error has occurred. Check the log file for details."
+msgstr ""

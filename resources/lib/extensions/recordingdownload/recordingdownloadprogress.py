@@ -15,19 +15,25 @@ class RecordingDownloadProgress:
 	LastStatus = None
 	ErrorMessage = None
 	
-	def __init__ (self, title, totalSegments):
+	def __init__(self, title, totalSegments):
 		self.Title = title
 		self.DownloadedSegments = 0
 		self.TotalSegments = totalSegments
 		self.lastStatus = 'OK'
 
-	def __init__ (self, fromFilename):
-		with open(fromFilename, 'r') as f:
-			self.__dict__ = json.loads(f.read())	
-		
 	def getProgressPercentage(self):
 		return (self.DownloadedSegments / self.TotalSegments) * 100
 
 	def serialize(self, toFilePath):
 		with open(toFilePath, 'w') as f:
 			f.write(json.dumps(self.__dict__))
+
+class RecordingDownloadProgressFactory:
+	"""
+	This class is used to deserialize RecordingDownloadProgress instances
+	"""
+	def deserialize(self, fromFilename):
+		with open(fromFilename, 'r') as f:
+			toReturn = RecordingDownloadProgress(None, None)
+			toReturn.__dict__ = json.loads(f.read())
+			return toReturn
