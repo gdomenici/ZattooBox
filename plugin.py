@@ -21,6 +21,8 @@ from resources.lib.extensions.livetv import LiveTV
 ext_dict['LiveTV'] = LiveTV
 from resources.lib.extensions.recordings import Recordings
 ext_dict['Recordings'] = Recordings
+from resources.lib.extensions.downloads import Downloads
+ext_dict['Downloads'] = Downloads
 
 #Main
 kodi_addon	= xbmcaddon.Addon()

@@ -28,7 +28,7 @@ class Recordings(ZBExtension):
 			ZBFolderItem(
 				host=self,
 				args={'mode': 'root'},
-				title=self.ZBProxy.get_string(30102),
+				title=self.ZBProxy.get_string(30102), # "Recordings"
 				image=os.path.join(self.ExtensionsPath, 'recordings/video.png')
 			)
 		]

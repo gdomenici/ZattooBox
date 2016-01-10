@@ -43,7 +43,11 @@ msgid "Recordings"
 msgstr ""
 
 msgctxt "#30103"
-msgid "Download"
+msgid "Download for offline use"
+msgstr ""
+
+msgctxt "#30104"
+msgid "Downloads"
 msgstr ""
 
 msgctxt "#30901"
