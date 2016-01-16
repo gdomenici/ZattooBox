@@ -47,7 +47,7 @@ class Downloads(ZBExtension):
 				continue
 			downloadProgress = RecordingDownloadProgress(None, 0)
 			downloadProgress.deserialize(downloadProgressFilename)
-			rootPlaylistFilename = os.path.join(self.DownloadRootFolder, oneSubdir, 'index.m3u8')
+			rootPlaylistFilename = os.path.join(self.DownloadRootFolder, oneSubdir, 'content.ts')
 			downloads.append(ZBPlayableItem(
 				host=self,
 				args={'mode': 'watch', 'path': rootPlaylistFilename},

@@ -114,13 +114,18 @@ class RecordingDownloader:
 		downloadProgress = RecordingDownloadProgress(self.Title, segmentCount)
 		downloadProgressSerializeFilename = os.path.join(self.MasterPlaylistFolder, 'downloadProgress.dat')
 		downloadProgress.serialize(downloadProgressSerializeFilename)
+		contentSaveFilename = os.path.join(self.MasterPlaylistFolder, 'content.ts')
+		if os.path.exists(contentSaveFilename):
+			os.remove(contentSaveFilename)
 		segmentCounter = 0
 		for oneSegment in segments:
 			try:
 				# oneSegment is a dictionary looking like this: { 'segmentUrl': segmentUrl, 'segmentFullPath': segmentFullPath }
 				segmentData = self.Recordings.ZapiSession.request_url_noExceptionCatch(oneSegment['segmentUrl'], None)
 				# Note the 'wb' coz it's binary
-				with open(oneSegment['segmentFullPath'], 'wb') as segmentOutputStream:
+				#with open(oneSegment['segmentFullPath'], 'wb') as segmentOutputStream:
+				#	segmentOutputStream.write(segmentData)
+				with open(contentSaveFilename, 'ab') as segmentOutputStream:
 					segmentOutputStream.write(segmentData)
 				segmentCounter += 1
 				downloadProgress.DownloadedSegments = segmentCounter
