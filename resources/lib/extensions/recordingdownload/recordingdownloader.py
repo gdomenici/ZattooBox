@@ -18,27 +18,30 @@ class RecordingDownloader:
 	Url = None
 	Title = None
 	Recordings = None
-	DownloadRootFolder = None
-	MasterPlaylistFolder = None
+	RootFolderForDownloads = None
+	ContentDownloadFolder = None
 	
 	def __init__ (self, url, title, recordings):
 		self.Url = url
 		self.Title = title
 		self.Recordings = recordings
-		self.DownloadRootFolder = os.path.join(self.Recordings.ZapiSession.CACHE_FOLDER, 'Downloads')
+		self.RootFolderForDownloads = os.path.join(self.Recordings.ZapiSession.CACHE_FOLDER, 'Downloads')
 		
 	def startDownload(self):
 		self.createMasterPlaylistFolder()
-		highestVariantStream = self.downloadPlaylist()
-		# Start downloading highest variant. The highestVariantStream dict looks like this:
+		# First read and parse the master playlist, in order to extract info about the
+		# highest bitrate
+		highestVariantStream = self.readMasterPlaylist()
+		# Start reading and parsing the highest variant playlist. The highestVariantStream
+		# dict looks like this:
 		# { 'variantUrl': variantUrl, 'extXStream': line, 'bitrate': bitrate }
-		segments = self.downloadVariantPlaylist(highestVariantStream['variantUrl'], highestVariantStream['bitrate'])
-		# Starts downloading the actual streams, asynchronously.
+		segments = self.readVariantPlaylist(highestVariantStream['variantUrl'], highestVariantStream['bitrate'])
+		# Start downloading the actual streams, asynchronously.
 		# segments is an array of dict that looks like this:
 		# { 'segmentUrl': segmentUrl, 'segmentFullPath': segmentFullPath }
 		thread.start_new_thread(self.downloadSegments, (segments, ) )
 
-	def downloadPlaylist(self):
+	def readMasterPlaylist(self):
 		"""
 		Returns a dict corresponding to the highest variant bitrate. The dict looks like this:
 		{ 'variantUrl': variantUrl, 'extXStream': line, 'bitrate': bitrate }
@@ -68,42 +71,31 @@ class RecordingDownloader:
 					highestBitrate = bitrate
 			line = playlistStream.readline()
 		# Now operate only on the highest bitrate stream
-		# Create a new master playlist, outputting only the highest variant
-		masterPlaylistFilename = os.path.join(self.MasterPlaylistFolder, 'index.m3u8')
-		with open(masterPlaylistFilename, 'w') as playlistOutputStream:
-			playlistOutputStream.write('#EXTM3U\n')
-			playlistOutputStream.write(variantStreams[highestBitrate]['extXStream']) # this one already has \n at the end
-			rewrittenVariantUrl = `highestBitrate` + '.m3u8'
-			playlistOutputStream.write(rewrittenVariantUrl + '\n')
 		return variantStreams[highestBitrate]
 		
-	def downloadVariantPlaylist(self, variantUrl, bitrate):
+	def readVariantPlaylist(self, variantUrl, bitrate):
 		"""
 		Returns an array of a dict that looks like this:
 		{ 'segmentUrl': segmentUrl, 'segmentFullPath': segmentFullPath }
 		"""
 		playlist = self.Recordings.ZapiSession.request_url(variantUrl, None)
 		playlistInputStream = StringIO.StringIO(playlist)
-		variantPlaylistFilename = os.path.join(self.MasterPlaylistFolder, `bitrate` + ".m3u8")
 		line = playlistInputStream.readline()
 		segments = []
-		with open(variantPlaylistFilename, 'w') as playlistOutputStream:
-			while line != '':
-				# non-segment lines are rewritten verbatim
-				playlistOutputStream.write(line)
-				if line.startswith('#EXTINF:'):
-					# read next line, containing URL
-					segmentUrl = playlistInputStream.readline()
-					if segmentUrl == '': # shouldn't happen but you never know
-						break
-					segmentUrl = urlparse.urljoin(variantUrl, segmentUrl)
-					segmentCounter = len(segments)
-					segmentFilename = `segmentCounter` + '.ts'
-					# rewrite segment URL as local filename URL
-					playlistOutputStream.write(segmentFilename + '\n')
-					segmentFullPath = os.path.join(self.MasterPlaylistFolder, segmentFilename)
-					segments.append( { 'segmentUrl': segmentUrl, 'segmentFullPath': segmentFullPath } )
-				line = playlistInputStream.readline()
+		while line != '':
+			# non-segment lines are rewritten verbatim
+			if line.startswith('#EXTINF:'):
+				# read next line, containing URL
+				segmentUrl = playlistInputStream.readline()
+				if segmentUrl == '': # shouldn't happen but you never know
+					break
+				segmentUrl = urlparse.urljoin(variantUrl, segmentUrl)
+				segmentCounter = len(segments)
+				segmentFilename = `segmentCounter` + '.ts'
+				# rewrite segment URL as local filename URL
+				segmentFullPath = os.path.join(self.ContentDownloadFolder, segmentFilename)
+				segments.append( { 'segmentUrl': segmentUrl, 'segmentFullPath': segmentFullPath } )
+			line = playlistInputStream.readline()
 		return segments
 
 	def downloadSegments (self, segments):
@@ -112,9 +104,9 @@ class RecordingDownloader:
 		xbmc.log(str(segmentCount))
 		# Next: download all segments
 		downloadProgress = RecordingDownloadProgress(self.Title, segmentCount)
-		downloadProgressSerializeFilename = os.path.join(self.MasterPlaylistFolder, 'downloadProgress.dat')
+		downloadProgressSerializeFilename = os.path.join(self.ContentDownloadFolder, 'downloadProgress.dat')
 		downloadProgress.serialize(downloadProgressSerializeFilename)
-		contentSaveFilename = os.path.join(self.MasterPlaylistFolder, 'content.ts')
+		contentSaveFilename = os.path.join(self.ContentDownloadFolder, 'content.ts')
 		if os.path.exists(contentSaveFilename):
 			os.remove(contentSaveFilename)
 		segmentCounter = 0
@@ -123,8 +115,6 @@ class RecordingDownloader:
 				# oneSegment is a dictionary looking like this: { 'segmentUrl': segmentUrl, 'segmentFullPath': segmentFullPath }
 				segmentData = self.Recordings.ZapiSession.request_url_noExceptionCatch(oneSegment['segmentUrl'], None)
 				# Note the 'wb' coz it's binary
-				#with open(oneSegment['segmentFullPath'], 'wb') as segmentOutputStream:
-				#	segmentOutputStream.write(segmentData)
 				with open(contentSaveFilename, 'ab') as segmentOutputStream:
 					segmentOutputStream.write(segmentData)
 				segmentCounter += 1
@@ -142,7 +132,7 @@ class RecordingDownloader:
 		 return filename
 
 	def createMasterPlaylistFolder(self):
-		self.MasterPlaylistFolder = self.get_valid_filename()
-		self.MasterPlaylistFolder = os.path.join(self.DownloadRootFolder, self.MasterPlaylistFolder)
-		if not os.path.exists(self.MasterPlaylistFolder):
-			os.makedirs(self.MasterPlaylistFolder)
+		self.ContentDownloadFolder = self.get_valid_filename()
+		self.ContentDownloadFolder = os.path.join(self.RootFolderForDownloads, self.ContentDownloadFolder)
+		if not os.path.exists(self.ContentDownloadFolder):
+			os.makedirs(self.ContentDownloadFolder)

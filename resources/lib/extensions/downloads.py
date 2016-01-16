@@ -14,10 +14,10 @@ import os
 import xbmc
 
 class Downloads(ZBExtension):
-	DownloadRootFolder = None
+	ContentDownloadFolder = None
 
 	def init(self):
-		self.DownloadRootFolder = os.path.join(self.ZapiSession.CACHE_FOLDER, 'Downloads')
+		self.ContentDownloadFolder = os.path.join(self.ZapiSession.CACHE_FOLDER, 'Downloads')
 		return
 
 	def get_items(self):
@@ -39,19 +39,41 @@ class Downloads(ZBExtension):
 
 	def build_downloadsList(self):
 		downloads = []
-		subdirs = [oneDir for oneDir in os.listdir(self.DownloadRootFolder) if os.path.isdir(os.path.join(self.DownloadRootFolder, oneDir))]
+		subdirs = [oneDir for oneDir in os.listdir(self.ContentDownloadFolder) if os.path.isdir(os.path.join(self.ContentDownloadFolder, oneDir))]
 		for oneSubdir in subdirs:
 			# Only focus on those dirs where the "download progress" file exists
-			downloadProgressFilename = os.path.join(self.DownloadRootFolder, oneSubdir, 'downloadProgress.dat')
+			downloadProgressFilename = os.path.join(self.ContentDownloadFolder, oneSubdir, 'downloadProgress.dat')
 			if not os.path.exists(downloadProgressFilename):
 				continue
 			downloadProgress = RecordingDownloadProgress(None, 0)
 			downloadProgress.deserialize(downloadProgressFilename)
-			rootPlaylistFilename = os.path.join(self.DownloadRootFolder, oneSubdir, 'content.ts')
+			contentSaveFilename = os.path.join(self.ContentDownloadFolder, oneSubdir, 'content.ts')
+			# Read the 'download progress' filename, to see if we're fully or partially downloaded
+			downloadProgressSerializeFilename = os.path.join(self.ContentDownloadFolder, oneSubdir, 'downloadProgress.dat')
+			downloadPercent = 0
+			errorMessage = None
+			if os.path.exists(downloadProgressSerializeFilename):
+				downloadProgress = RecordingDownloadProgress(None, 0)
+				downloadProgress.deserialize(downloadProgressSerializeFilename)
+				if downloadProgress.LastStatus == 'OK':
+					downloadPercent = int((float(downloadProgress.DownloadedSegments) / float(downloadProgress.TotalSegments)) * 100)
+				else:
+					errorMessage = downloadProgress.ErrorMessage
+			else:
+				# If for some mysterious reason we can't find the download progress file, assume it's 100%
+				downloadPercent = 100
+			label = downloadProgress.Title
+			if errorMessage is None:
+				if downloadPercent < 100:
+					label += ' [COLOR yellow][{0}% downloaded][/COLOR]'.format(downloadPercent) 
+			else:
+				label += ' [COLOR red][ERRORS - see log][/COLOR]'
+				xbmc.log('ERRORS downloading:')
+				xbmc.log(errorMessage)
 			downloads.append(ZBPlayableItem(
 				host=self,
-				args={'mode': 'watch', 'path': rootPlaylistFilename},
-				title=downloadProgress.Title,
+				args={'mode': 'watch', 'path': contentSaveFilename},
+				title=label,
 				image=None,
 				title2=''
 				)
@@ -59,6 +81,6 @@ class Downloads(ZBExtension):
 		self.ZBProxy.add_directoryItems(downloads)
 
 	def watch(self, args):
-		rootPlaylistFilename = args['path']
-		if os.path.exists(rootPlaylistFilename):
-			self.ZBProxy.play_stream(rootPlaylistFilename)
+		contentSaveFilename = args['path']
+		if os.path.exists(contentSaveFilename):
+			self.ZBProxy.play_stream(contentSaveFilename)
