@@ -8,7 +8,7 @@
 
 from recordingdownloadprogress import RecordingDownloadProgress
 import os
-import thread
+import threading
 import urlparse
 import xbmc
 import StringIO
@@ -39,7 +39,12 @@ class RecordingDownloader:
 		# Start downloading the actual streams, asynchronously.
 		# segments is an array of dict that looks like this:
 		# { 'segmentUrl': segmentUrl, 'segmentFullPath': segmentFullPath }
-		thread.start_new_thread(self.downloadSegments, (segments, ) )
+		newThread = threading.Thread(
+			name = 'pippo',
+			target = self.downloadSegments,
+			args = (segments ,) )
+		newThread.run()
+		#thread.start_new_thread(self.downloadSegments, (segments, ) )
 
 	def readMasterPlaylist(self):
 		"""
@@ -119,6 +124,7 @@ class RecordingDownloader:
 					segmentOutputStream.write(segmentData)
 				segmentCounter += 1
 				downloadProgress.DownloadedSegments = segmentCounter
+				downloadProgress.LastUpdated = time.time()
 				downloadProgress.serialize(downloadProgressSerializeFilename)
 			except Exception as ex:
 				downloadProgress.LastStatus = 'error'

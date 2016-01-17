@@ -13,12 +13,14 @@ class RecordingDownloadProgress:
 	DownloadedSegments = None
 	TotalSegments = None
 	LastStatus = None
+	LastUpdated = None
 	ErrorMessage = None
 	
 	def __init__(self, title, totalSegments):
 		self.Title = title
 		self.DownloadedSegments = 0
 		self.TotalSegments = totalSegments
+		self.LastUpdated = None
 		self.LastStatus = 'OK'
 
 	def deserialize(self, fromFilename):
@@ -26,7 +28,7 @@ class RecordingDownloadProgress:
 			self.__dict__ = json.loads(f.read())
 		
 	def getProgressPercentage(self):
-		return (self.DownloadedSegments / self.TotalSegments) * 100
+		return int((float(self.DownloadedSegments) / float(self.TotalSegments)) * 100)
 
 	def serialize(self, toFilePath):
 		with open(toFilePath, 'w') as f:

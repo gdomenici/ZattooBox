@@ -10,6 +10,7 @@
   <extension point="xbmc.python.pluginsource" library="plugin.py">
     <provides>video</provides>
   </extension>
+  <extension point="xbmc.service" name="zattooboxext.service" library="service.py" start="login" />
   <extension point="xbmc.addon.metadata">
     <summary lang="en">Play Live TV and recorded programs from a Zattoo account.</summary>
     <description lang="en">Play Live TV and recorded programs from a Zattoo account.
