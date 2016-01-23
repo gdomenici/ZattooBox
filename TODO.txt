@@ -1,13 +1,15 @@
 TODO
 ----
-* In RecordingDownloader, check for Kodi shutdown if download in progress and, if so, show alert.
+* In RecordingDownloader, show alert if Kodi is shutting down
 * Add support for resuming incomplete downloads.
+* Add support for resuming errored downloads.
 * Add support for deleting downloads
 * Add support for purging all downloads
-* (Maybe) periodically refresh Downloads list to show download progress
 
 DONE
 ----
 * In recordings.py, save each playlist in its own dedicated folder
 * In recordings.py, serialize RecordingDownloadProgress (into the folder above) every time a segment is downloaded.
 * Create new extension class (Downloads.py or something like that) to display list of downloaded items. This will cycle through the subdirs that contain a RecordingDownloadProgress serialization file with a known filename.
+* In RecordingDownloader, check for Kodi shutdown if download in progress
+* Periodically refresh Downloads list to show download progress

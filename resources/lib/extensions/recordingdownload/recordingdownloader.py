@@ -13,6 +13,7 @@ import urlparse
 import xbmc
 import StringIO
 import string
+import time
 
 class RecordingDownloader:
 	Url = None
@@ -128,8 +129,11 @@ class RecordingDownloader:
 				downloadProgress.serialize(downloadProgressSerializeFilename)
 			except Exception as ex:
 				downloadProgress.LastStatus = 'error'
-				downloadProgress.Error = `ex`
+				downloadProgress.ErrorMessage = `ex`
 				downloadProgress.serialize(downloadProgressSerializeFilename)
+				return
+			if xbmc.abortRequested:
+				xbmc.log('KODI exiting during download - stop downloading')
 				return
 			
 	def get_valid_filename(self):
