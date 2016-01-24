@@ -77,9 +77,9 @@ class Recordings(ZBExtension):
 			title = args['title']
 			downloader = RecordingDownloader(url, title, self)
 			try:
-				downloader.startDownload() # part of this is asynchronous
 				# "Recording download started. Check your Downloads folder for progress."
 				self.ZBProxy.show_message(self.ZBProxy.get_string(30903))
+				downloader.startDownload() # part of this is asynchronous
 			except Exception as ex:
 				xbmc.log('******** ERROR:')
 				xbmc.log(`ex`)

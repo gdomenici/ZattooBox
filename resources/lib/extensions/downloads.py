@@ -75,23 +75,16 @@ class Downloads(ZBExtension):
 			)
 		self.ZBProxy.add_directoryItems(downloads)
 		if downloadsInProgress:
-			# Refresh every few seconds
-			myWin = xbmcgui.Window(xbmcgui.getCurrentWindowId())
-			myWin.setProperty('downloadsWindow', 'True')
-			guiUpdateThread = threading.Thread(
-				name = 'guiUpdateThread',
-				target = self.refreshGuiItems,
-				args = (downloads, ) )
-			guiUpdateThread.daemon = True
-			guiUpdateThread.run()
-
+			guiUpdateTimer = threading.Timer(
+				4.0, # fire after  4 seconds
+				self.refreshGuiItems)
+			guiUpdateTimer.start()
+			
 	def watch(self, args):
 		contentSaveFilename = args['path']
 		if os.path.exists(contentSaveFilename):
 			self.ZBProxy.play_stream(contentSaveFilename)
 
-	def refreshGuiItems(self, downloads):
+	def refreshGuiItems(self):
 		xbmc.log('in refreshGuiItems')
-		time.sleep (4)
 		xbmc.executebuiltin('Container.Refresh')
-		return

@@ -1,10 +1,10 @@
 TODO
 ----
-* In RecordingDownloader, show alert if Kodi is shutting down
-* Add support for resuming incomplete downloads.
-* Add support for resuming errored downloads.
+* Add support for resuming incomplete downloads (context menu item, then call recordingDownloader.resumeDownload()).
+* Add support for resuming errored downloads (context menu item, then call recordingDownloader.resumeDownload(), but we need to introduce one more overload, to force-start from zero).
 * Add support for deleting downloads
 * Add support for purging all downloads
+* In RecordingDownloader, show alert if Kodi is shutting down?
 
 DONE
 ----

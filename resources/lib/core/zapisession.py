@@ -65,7 +65,7 @@ class ZapiSession:
 	def set_cookie(self, sessionId):
 		self.HttpHandler.addheaders.append(('Cookie', 'beaker.session.id=' + sessionId))
 
-	def request_url(self, url, params):
+	def request_url(self, url, params, swallowException = True):
 		try:
 			response = self.HttpHandler.open(url, urllib.urlencode(params) if params is not None else None)
 			if response is not None:
@@ -76,18 +76,10 @@ class ZapiSession:
 						self.persist_sessionId(sessionId)
 				return response.read()
 		except Exception:
-			pass
-		return None
-
-	def request_url_noExceptionCatch(self, url, params):
-		response = self.HttpHandler.open(url, urllib.urlencode(params) if params is not None else None)
-		if response is not None:
-			sessionId = self.extract_sessionId(response.info().getheader('Set-Cookie'))
-			if sessionId is not None:
-				self.set_cookie(sessionId)
-				if self.CACHE_ENABLED:
-					self.persist_sessionId(sessionId)
-			return response.read()
+			if swallowException:
+				pass
+			else:
+				raise
 		return None
 		
 	def exec_zapiCall(self, api, params, context='default'):

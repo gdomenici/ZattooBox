@@ -14,6 +14,7 @@ import xbmc
 import StringIO
 import string
 import time
+import json
 
 class RecordingDownloader:
 	Url = None
@@ -37,16 +38,32 @@ class RecordingDownloader:
 		# dict looks like this:
 		# { 'variantUrl': variantUrl, 'extXStream': line, 'bitrate': bitrate }
 		segments = self.readVariantPlaylist(highestVariantStream['variantUrl'], highestVariantStream['bitrate'])
-		# Start downloading the actual streams, asynchronously.
 		# segments is an array of dict that looks like this:
-		# { 'segmentUrl': segmentUrl, 'segmentFullPath': segmentFullPath }
+		# { 'segmentUrl': segmentUrl }
+		
+		# Serialize segments
+		segmentsSerializeFilename = os.path.join(self.ContentDownloadFolder, 'segments.dat')
+		with open(segmentsSerializeFilename, 'w') as f:
+			f.write(json.dumps(segments))
+
+		# Start downloading the actual streams, asynchronously.
 		newThread = threading.Thread(
 			name = 'pippo',
 			target = self.downloadSegments,
 			args = (segments ,) )
 		newThread.run()
-		#thread.start_new_thread(self.downloadSegments, (segments, ) )
 
+	def resumeDownload(self):
+		# Deserialize segments
+		segmentsSerializeFilename = os.path.join(self.ContentDownloadFolder, 'segments.dat')
+		with open(segmentsSerializeFilename, 'r') as f:
+			segments = json.loads(f.read())
+		newThread = threading.Thread(
+			name = 'pluto',
+			target = self.downloadSegments,
+			args = (segments , True) ) # True == resume
+		newThread.run()
+		
 	def readMasterPlaylist(self):
 		"""
 		Returns a dict corresponding to the highest variant bitrate. The dict looks like this:
@@ -82,7 +99,7 @@ class RecordingDownloader:
 	def readVariantPlaylist(self, variantUrl, bitrate):
 		"""
 		Returns an array of a dict that looks like this:
-		{ 'segmentUrl': segmentUrl, 'segmentFullPath': segmentFullPath }
+		{ 'segmentUrl': segmentUrl }
 		"""
 		playlist = self.Recordings.ZapiSession.request_url(variantUrl, None)
 		playlistInputStream = StringIO.StringIO(playlist)
@@ -96,30 +113,37 @@ class RecordingDownloader:
 				if segmentUrl == '': # shouldn't happen but you never know
 					break
 				segmentUrl = urlparse.urljoin(variantUrl, segmentUrl)
-				segmentCounter = len(segments)
-				segmentFilename = `segmentCounter` + '.ts'
-				# rewrite segment URL as local filename URL
-				segmentFullPath = os.path.join(self.ContentDownloadFolder, segmentFilename)
-				segments.append( { 'segmentUrl': segmentUrl, 'segmentFullPath': segmentFullPath } )
+				segments.append( { 'segmentUrl': segmentUrl } )
 			line = playlistInputStream.readline()
 		return segments
 
-	def downloadSegments (self, segments):
+	def downloadSegments (self, segments, resume = False):
 		segmentCount = len(segments)
 		xbmc.log('There are this many segments to download:')
 		xbmc.log(str(segmentCount))
 		# Next: download all segments
-		downloadProgress = RecordingDownloadProgress(self.Title, segmentCount)
 		downloadProgressSerializeFilename = os.path.join(self.ContentDownloadFolder, 'downloadProgress.dat')
-		downloadProgress.serialize(downloadProgressSerializeFilename)
+		startIndex = 0
+		if resume:
+			downloadProgress = RecordingDownloadProgress(None, 0)
+			downloadProgress.deserialize(downloadProgressSerializeFilename)
+			startIndex = downloadProgress.DownloadedSegments
+		else:
+			downloadProgress = RecordingDownloadProgress(self.Title, segmentCount)
+			downloadProgress.serialize(downloadProgressSerializeFilename)
 		contentSaveFilename = os.path.join(self.ContentDownloadFolder, 'content.ts')
 		if os.path.exists(contentSaveFilename):
 			os.remove(contentSaveFilename)
 		segmentCounter = 0
 		for oneSegment in segments:
+			if resume:
+				# Skip enough segments until we reach the resume point
+				if segmentCounter < startIndex:
+					segmentCounter += 1
+					continue
 			try:
-				# oneSegment is a dictionary looking like this: { 'segmentUrl': segmentUrl, 'segmentFullPath': segmentFullPath }
-				segmentData = self.Recordings.ZapiSession.request_url_noExceptionCatch(oneSegment['segmentUrl'], None)
+				# oneSegment is a dictionary looking like this: { 'segmentUrl': segmentUrl }
+				segmentData = self.Recordings.ZapiSession.request_url(oneSegment['segmentUrl'], None, False) # False = don't swallow exception
 				# Note the 'wb' coz it's binary
 				with open(contentSaveFilename, 'ab') as segmentOutputStream:
 					segmentOutputStream.write(segmentData)
